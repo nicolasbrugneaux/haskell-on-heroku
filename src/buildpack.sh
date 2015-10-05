@@ -1,24 +1,3 @@
-private_storage () {
-	[[ -n "${HALCYON_AWS_ACCESS_KEY_ID:+_}"
-	&& -n "${HALCYON_AWS_SECRET_ACCESS_KEY:+_}"
-	&& -n "${HALCYON_S3_BUCKET:+_}" ]] || return 1
-}
-
-
-expect_private_storage () {
-	if ! private_storage; then
-		log_error 'Expected private storage'
-		log
-		log_indent 'To set up private storage:'
-		log_indent '$ heroku config:set HALCYON_AWS_ACCESS_KEY_ID=...'
-		log_indent '$ heroku config:set HALCYON_AWS_SECRET_ACCESS_KEY=...'
-		log_indent '$ heroku config:set HALCYON_S3_BUCKET=...'
-		log
-		return 1
-	fi
-}
-
-
 buildpack_compile () {
 	expect_vars BUILDPACK_DIR
 
@@ -86,7 +65,7 @@ buildpack_compile () {
 	fi
 
 	case "${status}" in
-	'0')
+	'0')pr
 		if ! copy_dir_into "${root_dir}/app" "${build_dir}"; then
 			log_error 'Failed to copy app to slug directory'
 			return 1
@@ -127,13 +106,6 @@ buildpack_compile () {
 		log_error 'Failed to deploy app'
 		log_error 'Deploying buildpack only'
 		log
-		if ! private_storage; then
-			log_indent 'First, set up private storage:'
-			log_indent '$ heroku config:set HALCYON_AWS_ACCESS_KEY_ID=...'
-			log_indent '$ heroku config:set HALCYON_AWS_SECRET_ACCESS_KEY=...'
-			log_indent '$ heroku config:set HALCYON_S3_BUCKET=...'
-			log
-		fi
 		log_indent 'To continue, build the app on a one-off PX dyno:'
 		log_indent '$ heroku run -s PX build'
 		log
@@ -186,7 +158,6 @@ buildpack_install () {
 
 
 buildpack_build () {
-	expect_private_storage || return 1
 
 	local label
 	if ! label=$( buildpack_install "$@" ); then
